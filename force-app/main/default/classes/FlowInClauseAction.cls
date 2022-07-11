@@ -1,15 +1,24 @@
 public with sharing class FlowInClauseAction {
     @invocableMethod(label='In Clause Action')
-    public static List<List<SObject>> InClauseSOQL(List<Input> inputs){
+    public static List<List<SObject>> inClauseSOQL(List<Input> inputs){
         List<List<SObject>> listOfListOfQueriedRecords = new List<List<SObject>>();
         List<Id> idsFromCollectionToCheck = new List<Id>();
         for(Input input : inputs){
+            String query;
             for(SObject so : input.collectionToCheck){
                 idsFromCollectionToCheck.add(so.Id);
             }
-            //create query
+            //create soql query
             try{
-                String query = 'SELECT '+input.fieldsToQuery+' FROM '+input.objectToQuery+' WHERE '+input.filter+' AND '+input.fieldToRelateToCollection+' IN : idsFromCollectionToCheck';
+                if(input.filter == null){
+                    query = 'SELECT '+input.fieldsToQuery+' FROM '+input.objectToQuery+' WHERE '+input.fieldToRelateToCollection+' IN : idsFromCollectionToCheck';
+                } else{
+                    query = 'SELECT '+input.fieldsToQuery+' FROM '+input.objectToQuery+' WHERE '+input.filter+' AND '+input.fieldToRelateToCollection+' IN : idsFromCollectionToCheck';
+                }
+                
+                if(input.lim != null){
+                    query += ' LIMIT '+input.lim;
+                }
                 System.debug(query);
                 List<SObject> queriedRecords = Database.query(query);
                 system.debug(queriedRecords);
@@ -23,13 +32,13 @@ public with sharing class FlowInClauseAction {
     }
 
     public class Input{
-        @invocableVariable(label='fields to query' descirption='separate each field with comma' required=true)
+        @invocableVariable(label='fields to query' description='separate each field with comma' required=true)
         public String fieldsToQuery;
         
         @invocableVariable(required=true)
         public String objectToQuery;
 
-        @invocableVariable
+        @invocableVariable(description='Example:  Amount__c > 1000')
         public String filter;//example: Amount__c > 100 and Id IN (collectionToCheck)
 
         @invocableVariable(label='field to relate to collection' required=true)
@@ -37,5 +46,8 @@ public with sharing class FlowInClauseAction {
 
         @invocableVariable(required=true)
         public List<SObject> collectionToCheck;
+
+        @invocableVariable(label='limit' description='number of the records you want to retrieve from query')
+        public integer lim;
     }
 }
